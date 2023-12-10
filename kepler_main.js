@@ -1,0 +1,42 @@
+const { parse } = require('csv-parse');
+const fs = require('fs');
+
+const habitablePlanets = [] // array for planet data to work with
+
+// adding criteria for final review:
+// CONFIRMED - status as possible habitable planet
+// insol - Insolation Flux -> how much light does it get in comp. to our sun
+// prad - radius of said planet - to big means gas, no solid ground to build on
+function isHabitablePlanet(planet) {
+    return planet['koi_disposition'] === 'CONFIRMED'
+        && planet['koi_insol'] > 0.36 && planet['koi_insol'] < 1.11
+        && planet['koi_prad'] < 1.6;
+}
+
+fs.createReadStream('kepler_data.csv') // Event
+    // from read-stream to write-stream with pipe
+    .pipe(parse({
+        comment: '#',
+        columns: true,
+    }))    
+
+    // chaining different handlers
+    .on('data', (data) => {
+        if (isHabitablePlanet(data)) {
+            habitablePlanets.push(data);
+        }
+    })
+
+    .on('error', (err) => {
+        console.log(err);
+    })
+    
+    .on('end', () => {
+        //console.log(results);
+        console.log(habitablePlanets.map((planet) => {
+            return planet['kepler_name'];
+        }));
+
+        console.log(`${habitablePlanets.length} habitable planets found!`);
+        console.log('done');
+    });
